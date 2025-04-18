@@ -20,28 +20,43 @@
         <p>Fetching live location...</p>
     </div>
 
-    <script>
-        // Extract phone number and ID from URL parameters
-        const params = new URLSearchParams(window.location.search);
-        const phoneNumber = params.get('phone');
-        const uniqueId = params.get('id');
+   <script>
+    // Extract phone number and unique ID from URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const phoneNumber = params.get('phone');
+    const uniqueId = params.get('id');
 
-        // Display live location using the Geolocation API
-        const locationInfo = document.getElementById('locationInfo');
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                locationInfo.innerHTML = `
-                    <p><strong>Phone Number:</strong> ${phoneNumber}</p>
-                    <p><strong>Unique ID:</strong> ${uniqueId}</p>
-                    <p><strong>Latitude:</strong> ${latitude}</p>
-                    <p><strong>Longitude:</strong> ${longitude}</p>
-                `;
-            },
-            (error) => {
-                locationInfo.innerHTML = `<p>Error: Unable to fetch location. Please enable location permissions.</p>`;
-            }
-        );
-    </script>
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+
+            // Save the data in localStorage
+            const data = JSON.parse(localStorage.getItem('customerData')) || [];
+            data.push({
+                uniqueId,
+                phoneNumber,
+                latitude,
+                longitude,
+                timestamp: new Date().toLocaleString()
+            });
+            localStorage.setItem('customerData', JSON.stringify(data));
+
+            // Display the data for the customer
+            const locationInfo = document.getElementById('locationInfo');
+            locationInfo.innerHTML = `
+                <p><strong>Phone Number:</strong> ${phoneNumber}</p>
+                <p><strong>Unique ID:</strong> ${uniqueId}</p>
+                <p><strong>Latitude:</strong> ${latitude}</p>
+                <p><strong>Longitude:</strong> ${longitude}</p>
+            `;
+        },
+        (error) => {
+            document.getElementById('locationInfo').innerHTML = `
+                <p>Error: Unable to fetch location. Please enable location permissions.</p>
+            `;
+        }
+    );
+</script>
+
 </body>
 </html>
