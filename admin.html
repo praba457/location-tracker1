@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Locations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1>Customer Locations</h1>
+    <p>Below is the list of customers who have clicked their trackable links:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Unique ID</th>
+                <th>Phone Number</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="customerTable">
+            <!-- Data will be populated here -->
+        </tbody>
+    </table>
+
+    <script>
+        // Fetch customer data from localStorage
+        const customerData = JSON.parse(localStorage.getItem('customerData')) || [];
+        const customerTable = document.getElementById('customerTable');
+
+        // Populate the table with customer data
+        customerData.forEach((entry) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${entry.uniqueId}</td>
+                <td>${entry.phoneNumber}</td>
+                <td>${entry.latitude}</td>
+                <td>${entry.longitude}</td>
+                <td>${entry.timestamp}</td>
+            `;
+            customerTable.appendChild(row);
+        });
+    </script>
+</body>
+</html>
