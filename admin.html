@@ -1,39 +1,59 @@
 <!DOCTYPE html>
 <html>
-<head><title>Admin Panel</title></head>
+<head>
+  <title>Admin Panel</title>
+  <style>
+    iframe { width: 300px; height: 200px; border: 0; }
+    .row { margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 15px; }
+  </style>
+</head>
 <body>
-  <h2>Visitor Logs</h2>
-  <table border="1">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>IP</th>
-        <th>Location</th>
-        <th>ISP</th>
-        <th>Time</th>
-      </tr>
-    </thead>
-    <tbody id="logs"></tbody>
-  </table>
+  <h2>Visitor Logs with Map</h2>
+  <div id="logs"></div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
 
   <script>
+    function createMap(lat, lon) {
+      return `<iframe
+        loading="lazy"
+        allowfullscreen
+        src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
+    }
+
+    function createShareLink(data) {
+      const text = `🧭 Visitor Log:
+ID: ${data.id}
+IP: ${data.ip}
+City: ${data.city}, ${data.region}, ${data.country}
+Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
+      const encoded = encodeURIComponent(text);
+      return `https://wa.me/?text=${encoded}`;
+    }
+
     db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
-      const tbody = document.getElementById("logs");
+      const container = document.getElementById("logs");
+
       snapshot.forEach(doc => {
         const data = doc.data();
-        const row = `<tr>
-          <td>${data.id}</td>
-          <td>${data.ip}</td>
-          <td>${data.city}, ${data.region}, ${data.country}</td>
-          <td>${data.org || "N/A"}</td>
-          <td>${new Date(data.timestamp.toDate()).toLocaleString()}</td>
-        </tr>`;
-        tbody.innerHTML += row;
+        const time = new Date(data.timestamp.toDate()).toLocaleString();
+        const shareURL = createShareLink(data);
+
+        const row = document.createElement("div");
+        row.classList.add("row");
+        row.innerHTML = `
+          <strong>ID:</strong> ${data.id}<br>
+          <strong>IP:</strong> ${data.ip}<br>
+          <strong>Location:</strong> ${data.city}, ${data.region}, ${data.country}<br>
+          <strong>ISP:</strong> ${data.org || "N/A"}<br>
+          <strong>Time:</strong> ${time}<br><br>
+          ${createMap(data.latitude, data.longitude)}<br><br>
+          <a href="${shareURL}" target="_blank">📤 Share on WhatsApp</a>
+        `;
+        container.appendChild(row);
       });
     });
   </script>
