@@ -2,25 +2,35 @@
 <html>
 <head><title>Tracking...</title></head>
 <body>
-  <h2>Tracking... Please wait</h2>
+  <h2>Capturing location...</h2>
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
+
   <script>
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+    const id = params.get("id") || "unknown";
 
-    fetch('https://ipapi.co/json/') // You can replace with any IP geo API
+    fetch('https://ipapi.co/json/')
       .then(res => res.json())
       .then(data => {
         db.collection("clicks").add({
-          id,
+          id: id,
           timestamp: new Date(),
           ip: data.ip,
           city: data.city,
           region: data.region,
           country: data.country_name,
+          org: data.org
+        }).then(() => {
+          document.body.innerHTML = "<h3>Thank you! Your location has been logged.</h3>";
         });
+      })
+      .catch(err => {
+        document.body.innerHTML = "<p>Unable to get location at the moment.</p>";
+        console.error("Geolocation error:", err);
       });
   </script>
 </body>
