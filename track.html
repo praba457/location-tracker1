@@ -1,10 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Track Location</title>
+  <meta charset="UTF-8">
+  <title>📍 Locating You...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #d0e8f2, #fcd5ce);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+      color: #333;
+      text-align: center;
+    }
+    .box {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      max-width: 320px;
+      margin: 20px;
+      transition: all 0.3s ease;
+    }
+    h2 {
+      color: #4361ee;
+      margin-bottom: 10px;
+    }
+    p {
+      margin: 10px 0;
+    }
+    .emoji {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .loading {
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+    .thank-you {
+      font-size: 18px;
+      color: #4a4e69;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h2>📍 Capturing location... hang tight!</h2>
+
+  <div class="box" id="container">
+    <div class="emoji">📍</div>
+    <h2>Hang Tight!</h2>
+    <p class="loading">We’re capturing your location...</p>
+  </div>
 
   <!-- Firebase SDK v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -14,6 +69,7 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id") || "anonymous";
+    const container = document.getElementById("container");
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -29,22 +85,38 @@
               longitude: lon
             });
 
-            document.body.innerHTML = `<h3>✅ Location saved!<br>Lat: ${lat}, Lon: ${lon}</h3>`;
+            container.innerHTML = `
+              <div class="emoji">✅</div>
+              <h2>Location Captured!</h2>
+              <p>Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}</p>
+              <div class="thank-you">Thank you so much! 💖<br>Your help means a lot to us.<br>Stay amazing 🌟</div>
+            `;
           } catch (err) {
-            console.error("Firestore error:", err);
-            document.body.innerHTML = `<p>❌ Error saving location. See console.</p>`;
+            console.error("Error saving to Firestore:", err);
+            container.innerHTML = `
+              <div class="emoji">😓</div>
+              <h2>Oops!</h2>
+              <p>Something went wrong while saving your location.</p>
+              <div class="thank-you">Please try again in a few minutes 🙏</div>
+            `;
           }
         },
         (error) => {
-          console.error("Geolocation failed:", error);
-          document.body.innerHTML = `
-            <p>❌ Failed to fetch location.</p>
-            <p>${error.message}</p>
+          console.error("Location error:", error);
+          container.innerHTML = `
+            <div class="emoji">🚫</div>
+            <h2>Permission Denied</h2>
+            <p>We couldn't get your location.</p>
+            <div class="thank-you">Please enable location services and try again.</div>
           `;
         }
       );
     } else {
-      document.body.innerHTML = "<p>❌ Geolocation is not supported in this browser.</p>";
+      container.innerHTML = `
+        <div class="emoji">🧭</div>
+        <h2>Not Supported</h2>
+        <p>Your browser doesn’t support location access.</p>
+      `;
     }
   </script>
 </body>
