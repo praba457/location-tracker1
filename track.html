@@ -13,21 +13,23 @@
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id") || "unknown";
 
-    fetch("https://ipinfo.io/json?token=75c2b45984361a")  // replace with your token
+    // Fetch location using ip-api (simpler & free tier works well)
+    fetch("http://ip-api.com/json/")
       .then(res => res.json())
       .then(data => {
-        const [latitude, longitude] = data.loc.split(",");
+        const { lat, lon, city, region, country, query: ip, org } = data;
 
+        // Store location data in Firestore
         db.collection("clicks").add({
           id: id,
           timestamp: new Date(),
-          ip: data.ip,
-          city: data.city,
-          region: data.region,
-          country: data.country,
-          org: data.org || "N/A",
-          latitude,
-          longitude
+          ip: ip,
+          city: city,
+          region: region,
+          country: country,
+          org: org || "N/A",
+          latitude: lat,
+          longitude: lon
         }).then(() => {
           document.body.innerHTML = "<h3>Thank you! Your location has been recorded.</h3>";
         });
