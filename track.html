@@ -13,31 +13,37 @@
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id") || "unknown";
 
-    // Fetch location using ip-api (simpler & free tier works well)
-    fetch("http://ip-api.com/json/")
-      .then(res => res.json())
-      .then(data => {
-        const { lat, lon, city, region, country, query: ip, org } = data;
+    // Check if geolocation is available
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        // You can log or display the coordinates here
+        console.log("Latitude:", latitude);
+        console.log("Longitude:", longitude);
 
         // Store location data in Firestore
         db.collection("clicks").add({
           id: id,
           timestamp: new Date(),
-          ip: ip,
-          city: city,
-          region: region,
-          country: country,
-          org: org || "N/A",
-          latitude: lat,
-          longitude: lon
+          latitude: latitude,
+          longitude: longitude,
+          city: "Unknown",
+          region: "Unknown",
+          country: "Unknown",
+          ip: "N/A",
+          org: "N/A"
         }).then(() => {
           document.body.innerHTML = "<h3>Thank you! Your location has been recorded.</h3>";
         });
-      })
-      .catch(err => {
-        document.body.innerHTML = "<p>Unable to get location. Please try again later.</p>";
-        console.error("Geo error:", err);
+      }, function(error) {
+        document.body.innerHTML = "<p>Unable to fetch location. Please try again later.</p>";
+        console.error("Geo error:", error);
       });
+    } else {
+      document.body.innerHTML = "<p>Geolocation is not supported by this browser.</p>";
+    }
   </script>
 </body>
 </html>
