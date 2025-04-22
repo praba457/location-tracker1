@@ -2,51 +2,40 @@
 <html>
 <head><title>Admin Panel</title></head>
 <body>
-  <h2>Admin Panel</h2>
-  <input type="password" id="pwd" placeholder="Enter password" />
-  <button onclick="login()">Login</button>
+  <h2>Visitor Logs</h2>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>IP</th>
+        <th>Location</th>
+        <th>ISP</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody id="logs"></tbody>
+  </table>
 
-  <div id="adminContent" style="display:none;">
-    <h3>Clicks</h3>
-    <table border="1">
-      <thead>
-        <tr><th>ID</th><th>IP</th><th>Location</th><th>Time</th></tr>
-      </thead>
-      <tbody id="results"></tbody>
-    </table>
-  </div>
-
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
+
   <script>
-    const ADMIN_PASSWORD = "mypassword"; // Change this
-
-    function login() {
-      const pwd = document.getElementById("pwd").value;
-      if (pwd === ADMIN_PASSWORD) {
-        document.getElementById("adminContent").style.display = "block";
-        loadClicks();
-      } else {
-        alert("Incorrect password!");
-      }
-    }
-
-    function loadClicks() {
-      db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
-        const tbody = document.getElementById("results");
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const row = `<tr>
-            <td>${data.id}</td>
-            <td>${data.ip}</td>
-            <td>${data.city}, ${data.region}, ${data.country}</td>
-            <td>${new Date(data.timestamp.toDate()).toLocaleString()}</td>
-          </tr>`;
-          tbody.innerHTML += row;
-        });
+    db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
+      const tbody = document.getElementById("logs");
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = `<tr>
+          <td>${data.id}</td>
+          <td>${data.ip}</td>
+          <td>${data.city}, ${data.region}, ${data.country}</td>
+          <td>${data.org || "N/A"}</td>
+          <td>${new Date(data.timestamp.toDate()).toLocaleString()}</td>
+        </tr>`;
+        tbody.innerHTML += row;
       });
-    }
+    });
   </script>
 </body>
 </html>
