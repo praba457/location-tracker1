@@ -5,13 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Locations</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
-            color: #333;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -24,6 +19,17 @@
         }
         th {
             background-color: #f4f4f4;
+        }
+        .copy-btn {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .copy-btn:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -38,6 +44,7 @@
                 <th>Latitude</th>
                 <th>Longitude</th>
                 <th>Timestamp</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody id="customerTable">
@@ -45,23 +52,65 @@
         </tbody>
     </table>
 
-    <script>
-        // Fetch customer data from localStorage
-        const customerData = JSON.parse(localStorage.getItem('customerData')) || [];
-        const customerTable = document.getElementById('customerTable');
+    <div id="map" style="margin-top: 20px; width: 100%; height: 500px; border: 1px solid #ddd;"></div>
 
-        // Populate the table with customer data
-        customerData.forEach((entry) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${entry.uniqueId}</td>
-                <td>${entry.phoneNumber}</td>
-                <td>${entry.latitude}</td>
-                <td>${entry.longitude}</td>
-                <td>${entry.timestamp}</td>
-            `;
-            customerTable.appendChild(row);
-        });
-    </script>
-</body>
-</html>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-database.js"></script>
+
+    <script>
+        // Firebase configuration
+         const firebaseConfig = {
+  apiKey: "AIzaSyDY_kmYpJs5EDexvf2nPSWrLaOYoiF8H10",
+  authDomain: "trackablelinks-9b3df.firebaseapp.com",
+  projectId: "trackablelinks-9b3df",
+  storageBucket: "trackablelinks-9b3df.firebasestorage.app",
+  messagingSenderId: "824869195870",
+  appId: "1:824869195870:web:937e99332966ea3a0d64cf"
+};
+
+
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Fetch customer data and display it
+        const customerTable = document.getElementById('customerTable');
+        const map = document.getElementById('map');
+        let markers = [];
+
+        db.ref('customers').on('value', (snapshot) => {
+            const data = snapshot.val();
+            customerTable.innerHTML = ''; // Clear table before populating
+            markers = []; // Reset markers on map
+
+            const iframeMapBase = "https://www.google.com/maps?q=";
+
+            for (const uniqueId in data) {
+                const entry = data[uniqueId];
+                const row = document.createElement('tr');
+                
+                // Add table row with copy functionality and timestamp
+                row.innerHTML = `
+                    <td>${uniqueId}</td>
+                    <td>${entry.phoneNumber}</td>
+                    <td>${entry.latitude}</td>
+                    <td>${entry.longitude}</td>
+                    <td>${entry.timestamp}</td>
+                    <td>
+                        <button class="copy-btn" onclick="copyToClipboard('${entry.latitude}, ${entry.longitude}')">Copy</button>
+                        <button class="copy-btn" onclick="viewOnMap('${entry.latitude}', '${entry.longitude}')">View on Map</button>
+                    </td>
+                `;
+                customerTable.appendChild(row);
+
+                // Add location marker to map (iframe-based)
+                markers.push(`${iframeMapBase}${entry.latitude},${entry.longitude}`);
+            }
+
+            // Show the last marker location in the map iframe
+            if (markers.length > 0) {
+                const lastMarker = markers[markers.length - 1];
+                map.innerHTML = `<iframe src="${lastMarker}" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`;
+            } else {
+                map.innerHTML = `<p>No locations available to show on the map.</p>`;
