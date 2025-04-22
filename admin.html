@@ -3,61 +3,70 @@
 <head>
   <title>Admin Panel</title>
   <style>
-    body { font-family: Arial; }
-    iframe { width: 300px; height: 200px; border: 0; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
     .entry {
-      margin-bottom: 30px;
+      margin-bottom: 25px;
       border-bottom: 1px solid #ccc;
       padding-bottom: 15px;
+    }
+    iframe {
+      width: 100%;
+      height: 200px;
+      border: 0;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h2>Visitor Logs with Map</h2>
+  <h2>📊 Visitor Location Logs</h2>
   <div id="logs">Loading...</div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <!-- Firebase SDK v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
 
   <script>
-    function createMap(lat, lon) {
-      return `<iframe
-        loading="lazy"
-        allowfullscreen
-        src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
+    function createMapEmbed(lat, lon) {
+      return `
+        <iframe
+          src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"
+          allowfullscreen
+          loading="lazy"
+        ></iframe>
+      `;
     }
 
-    function createShareLink(data) {
-      const text = `🧭 Visitor Log:
+    function createWhatsAppLink(data) {
+      const msg = `🧭 Visitor Log:
 ID: ${data.id}
 Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
-      return `https://wa.me/?text=${encodeURIComponent(text)}`;
+      return `https://wa.me/?text=${encodeURIComponent(msg)}`;
     }
 
     db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
       const container = document.getElementById("logs");
-      container.innerHTML = ""; // Clear "Loading..."
+      container.innerHTML = "";
 
       snapshot.forEach(doc => {
         const data = doc.data();
-        const time = new Date(data.timestamp.toDate()).toLocaleString();
+        const date = new Date(data.timestamp.toDate()).toLocaleString();
 
         const entry = document.createElement("div");
         entry.classList.add("entry");
         entry.innerHTML = `
           <strong>ID:</strong> ${data.id}<br>
-          <strong>Time:</strong> ${time}<br>
+          <strong>Time:</strong> ${date}<br>
           <strong>Lat:</strong> ${data.latitude}<br>
-          <strong>Lon:</strong> ${data.longitude}<br><br>
-          ${createMap(data.latitude, data.longitude)}<br><br>
-          <a href="${createShareLink(data)}" target="_blank">📤 Share via WhatsApp</a>
+          <strong>Lon:</strong> ${data.longitude}<br>
+          ${createMapEmbed(data.latitude, data.longitude)}
+          <br>
+          <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
         `;
         container.appendChild(entry);
       });
     }).catch(err => {
-      document.getElementById("logs").innerHTML = "❌ Error loading data.";
+      document.getElementById("logs").innerHTML = "❌ Failed to load logs.";
       console.error(err);
     });
   </script>
