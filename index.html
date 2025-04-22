@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html>
-<head><title>Link Generator</title></head>
+<head><title>Tracking Link Generator</title></head>
 <body>
-  <h2>Create Tracking Link</h2>
-  <input id="userId" placeholder="Enter custom ID" />
-  <button onclick="generateLink()">Generate Link</button>
+  <h2>Create Your Custom Tracking Link</h2>
+  <input id="userId" placeholder="Enter customer ID" />
+  <button onclick="generateLink()">Generate</button>
   <p id="output"></p>
 
   <script>
     function generateLink() {
-      const id = document.getElementById('userId').value;
-      const link = `${window.location.origin}/track.html?id=${id}`;
+      const id = document.getElementById('userId').value.trim();
+      if (!id) return alert("Please enter an ID.");
+      const link = `${window.location.origin}/track.html?id=${encodeURIComponent(id)}`;
       document.getElementById('output').innerText = link;
     }
   </script>
