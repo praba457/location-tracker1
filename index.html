@@ -1,57 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generate Trackable Link</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        form, .result {
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
+<html>
+<head><title>Link Generator</title></head>
 <body>
-    <h1>Generate a Trackable Link</h1>
-    <form id="linkForm">
-        <label for="phone">Enter Phone Number:</label>
-        <input type="text" id="phone" placeholder="e.g., +91XXXXXXXXXX" required>
-        <button type="submit">Generate Link</button>
-    </form>
+  <h2>Create Tracking Link</h2>
+  <input id="userId" placeholder="Enter custom ID" />
+  <button onclick="generateLink()">Generate Link</button>
+  <p id="output"></p>
 
-    <div class="result" id="result" style="display: none;">
-        <h2>Trackable Link</h2>
-        <p>
-            <a href="" target="_blank" id="trackableLink">Click Here</a>
-        </p>
-    </div>
-
-    <script>
-        // Handle form submission
-        const form = document.getElementById('linkForm');
-        const result = document.getElementById('result');
-        const trackableLink = document.getElementById('trackableLink');
-
-        form.addEventListener('submit', (event) => {
-            event.preventDefault(); // Prevent page reload
-
-            const phoneNumber = document.getElementById('phone').value;
-            const uniqueId = Math.random().toString(36).substr(2, 9); // Generate a unique ID
-
-            // Create a trackable link (includes phone number and unique ID)
-            const link = `${window.location.origin}/track.html?id=${uniqueId}&phone=${encodeURIComponent(phoneNumber)}`;
-
-            // Display the link
-            trackableLink.href = link;
-            trackableLink.textContent = link;
-            result.style.display = 'block';
-        });
-    </script>
+  <script>
+    function generateLink() {
+      const id = document.getElementById('userId').value;
+      const link = `${window.location.origin}/track.html?id=${id}`;
+      document.getElementById('output').innerText = link;
+    }
+  </script>
 </body>
 </html>
