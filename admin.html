@@ -15,10 +15,25 @@
       border: 0;
       margin-top: 10px;
     }
+    .controls {
+      margin-bottom: 20px;
+    }
+    .clear-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <h2>📊 Visitor Location Logs</h2>
+  <div class="controls">
+    <button class="clear-btn" onclick="clearLogs()">🗑️ Clear All Logs</button>
+  </div>
   <div id="logs">Loading...</div>
 
   <!-- Firebase SDK v8 -->
@@ -27,6 +42,8 @@
   <script src="firebase-config.js"></script>
 
   <script>
+    const logsContainer = document.getElementById("logs");
+
     function createMapEmbed(lat, lon) {
       return `
         <iframe
@@ -38,37 +55,60 @@
     }
 
     function createWhatsAppLink(data) {
-      const msg = `🧭 Visitor Log:
-ID: ${data.id}
-Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
+      const msg = `🧭 Visitor Log:\nID: ${data.id}\nMap: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
       return `https://wa.me/?text=${encodeURIComponent(msg)}`;
     }
 
-    db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
-      const container = document.getElementById("logs");
-      container.innerHTML = "";
+    function loadLogs() {
+      db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
+        logsContainer.innerHTML = "";
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const date = new Date(data.timestamp.toDate()).toLocaleString();
+        if (snapshot.empty) {
+          logsContainer.innerHTML = "<p>No logs found.</p>";
+          return;
+        }
 
-        const entry = document.createElement("div");
-        entry.classList.add("entry");
-        entry.innerHTML = `
-          <strong>ID:</strong> ${data.id}<br>
-          <strong>Time:</strong> ${date}<br>
-          <strong>Lat:</strong> ${data.latitude}<br>
-          <strong>Lon:</strong> ${data.longitude}<br>
-          ${createMapEmbed(data.latitude, data.longitude)}
-          <br>
-          <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
-        `;
-        container.appendChild(entry);
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const date = new Date(data.timestamp.toDate()).toLocaleString();
+
+          const entry = document.createElement("div");
+          entry.classList.add("entry");
+          entry.innerHTML = `
+            <strong>ID:</strong> ${data.id}<br>
+            <strong>Time:</strong> ${date}<br>
+            <strong>Lat:</strong> ${data.latitude}<br>
+            <strong>Lon:</strong> ${data.longitude}<br>
+            ${createMapEmbed(data.latitude, data.longitude)}
+            <br>
+            <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
+          `;
+          logsContainer.appendChild(entry);
+        });
+      }).catch(err => {
+        logsContainer.innerHTML = "❌ Failed to load logs.";
+        console.error(err);
       });
-    }).catch(err => {
-      document.getElementById("logs").innerHTML = "❌ Failed to load logs.";
-      console.error(err);
-    });
+    }
+
+    function clearLogs() {
+      if (!confirm("Are you sure you want to delete all visitor logs? This action cannot be undone.")) return;
+
+      db.collection("clicks").get().then(snapshot => {
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        return batch.commit();
+      }).then(() => {
+        alert("✅ All logs have been cleared.");
+        logsContainer.innerHTML = "<p>No logs found.</p>";
+      }).catch(error => {
+        console.error("Error clearing logs:", error);
+        alert("❌ Failed to clear logs.");
+      });
+    }
+
+    // Initial load
+    loadLogs();
   </script>
 </body>
 </html>
