@@ -4,17 +4,7 @@
   <title>Admin Panel</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    .entry {
-      margin-bottom: 25px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 15px;
-    }
-    iframe {
-      width: 100%;
-      height: 200px;
-      border: 0;
-      margin-top: 10px;
-    }
+    h2 { margin-bottom: 10px; }
     .controls {
       margin-bottom: 20px;
     }
@@ -26,6 +16,37 @@
       cursor: pointer;
       border-radius: 5px;
       font-size: 14px;
+    }
+    .entry {
+      margin-bottom: 25px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 15px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    iframe {
+      width: 100%;
+      height: 200px;
+      border: 0;
+      margin-top: 10px;
+    }
+    a {
+      text-decoration: none;
+      color: #3498db;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .delete-btn {
+      background-color: #e74c3c;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 12px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -82,12 +103,26 @@
             ${createMapEmbed(data.latitude, data.longitude)}
             <br>
             <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
+            <br>
+            <button class="delete-btn" onclick="deleteLog('${doc.id}')">🗑️ Delete Log</button>
           `;
           logsContainer.appendChild(entry);
         });
       }).catch(err => {
         logsContainer.innerHTML = "❌ Failed to load logs.";
         console.error(err);
+      });
+    }
+
+    function deleteLog(docId) {
+      if (!confirm("Are you sure you want to delete this log? This cannot be undone.")) return;
+
+      db.collection("clicks").doc(docId).delete().then(() => {
+        alert("✅ Log deleted successfully.");
+        loadLogs(); // Refresh logs after deletion
+      }).catch(error => {
+        console.error("Error deleting log:", error);
+        alert("❌ Failed to delete log.");
       });
     }
 
