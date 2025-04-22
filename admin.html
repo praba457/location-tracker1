@@ -90,4 +90,38 @@ Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
           entry.innerHTML = `
             <strong>ID:</strong> ${data.id}<br>
             <strong>Time:</strong> ${date}<br>
-            <strong>Lat:</strong> ${
+            <strong>Lat:</strong> ${data.latitude}<br>
+            <strong>Lon:</strong> ${data.longitude}<br>
+            ${createMapEmbed(data.latitude, data.longitude)}
+            <br>
+            <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
+          `;
+          logsContainer.appendChild(entry);
+        });
+      }).catch(err => {
+        logsContainer.innerHTML = "❌ Failed to load logs.";
+        console.error(err);
+      });
+    }
+
+    function clearLogs() {
+      if (!confirm("Are you sure you want to delete all visitor logs? This cannot be undone.")) return;
+
+      db.collection("clicks").get().then(snapshot => {
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        return batch.commit();
+      }).then(() => {
+        alert("✅ All logs have been cleared.");
+        logsContainer.innerHTML = "<p>No logs found.</p>";
+      }).catch(error => {
+        console.error("Error clearing logs:", error);
+        alert("❌ Failed to clear logs.");
+      });
+    }
+
+    // Load logs on page load
+    loadLogs();
+  </script>
+</body>
+</html>
