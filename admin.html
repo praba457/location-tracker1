@@ -1,74 +1,194 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Panel</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .entry {
-      margin-bottom: 25px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 15px;
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+      color: #333;
     }
-    iframe {
-      width: 100%;
-      height: 200px;
-      border: 0;
+
+    header {
+      background-color: #4a90e2;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .toggle-btn {
+      background-color: white;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 5px;
       margin-top: 10px;
+    }
+
+    .toggle-btn:hover {
+      background-color: #e0e0e0;
+    }
+
+    .dashboard {
+      padding: 20px;
+    }
+
+    .card {
+      background-color: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .user-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .user-card {
+      background-color: #f1f1f1;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .user-card p {
+      margin: 5px 0;
+    }
+
+    .btn {
+      background-color: #4a90e2;
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #357ab7;
+    }
+
+    .copy-btn, .whatsapp-btn {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 12px;
+      color: #4a90e2;
+      border: 1px solid #4a90e2;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    .copy-btn:hover, .whatsapp-btn:hover {
+      background-color: #4a90e2;
+      color: white;
+    }
+
+    .dark-mode {
+      background-color: #333;
+      color: white;
+    }
+
+    .dark-mode header {
+      background-color: #222;
     }
   </style>
 </head>
-<body>
-  <h2>📊 Visitor Location Logs</h2>
-  <div id="logs">Loading...</div>
 
-  <!-- Firebase SDK v8 -->
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+    <button class="toggle-btn" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+  </header>
+
+  <div class="dashboard">
+    <div class="card">
+      <h2>User Activity</h2>
+      <div class="user-list" id="user-list">
+        <!-- User data will be displayed here -->
+      </div>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="firebase-config.js"></script>
 
   <script>
-    function createMapEmbed(lat, lon) {
-      return `
-        <iframe
-          src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"
-          allowfullscreen
-          loading="lazy"
-        ></iframe>
-      `;
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY", // Replace with your Firebase API key
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Fetching user data from Firestore
+    async function getUsers() {
+      const snapshot = await db.collection('clicks').get();
+      const usersData = snapshot.docs.map(doc => doc.data());
+      displayUsers(usersData);
     }
 
-    function createWhatsAppLink(data) {
-      const msg = `🧭 Visitor Log:
-ID: ${data.id}
-Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
-      return `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    }
+    // Displaying users in the admin panel
+    function displayUsers(users) {
+      const userListContainer = document.getElementById("user-list");
+      userListContainer.innerHTML = '';
+      
+      if (users.length === 0) {
+        userListContainer.innerHTML = "<p>No users have clicked the link yet.</p>";
+      }
 
-    db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
-      const container = document.getElementById("logs");
-      container.innerHTML = "";
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const date = new Date(data.timestamp.toDate()).toLocaleString();
-
-        const entry = document.createElement("div");
-        entry.classList.add("entry");
-        entry.innerHTML = `
-          <strong>ID:</strong> ${data.id}<br>
-          <strong>Time:</strong> ${date}<br>
-          <strong>Lat:</strong> ${data.latitude}<br>
-          <strong>Lon:</strong> ${data.longitude}<br>
-          ${createMapEmbed(data.latitude, data.longitude)}
-          <br>
-          <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
+      users.forEach(user => {
+        const userCard = document.createElement('div');
+        userCard.classList.add('user-card');
+        userCard.innerHTML = `
+          <h3>User ID: ${user.id}</h3>
+          <p>Latitude: ${user.latitude.toFixed(5)}</p>
+          <p>Longitude: ${user.longitude.toFixed(5)}</p>
+          <button class="btn" onclick="copyLink('${user.id}')">Copy Link</button>
+          <a href="https://wa.me/?text=Check%20out%20this%20location%20Latitude:${user.latitude.toFixed(5)}%20Longitude:${user.longitude.toFixed(5)}" target="_blank" class="whatsapp-btn">Share on WhatsApp</a>
         `;
-        container.appendChild(entry);
+        userListContainer.appendChild(userCard);
       });
-    }).catch(err => {
-      document.getElementById("logs").innerHTML = "❌ Failed to load logs.";
-      console.error(err);
-    });
+    }
+
+    // Function to copy the link to clipboard
+    function copyLink(userId) {
+      const link = `${window.location.origin}/track.html?id=${userId}`;
+      navigator.clipboard.writeText(link).then(() => {
+        alert("Link copied to clipboard!");
+      });
+    }
+
+    // Toggle Dark Mode
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+    }
+
+    // Fetch users when the page loads
+    getUsers();
   </script>
 </body>
 </html>
