@@ -2,54 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>📍 Locating You...</title>
+  <title>🌍 Getting Your Location</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #d0e8f2, #fcd5ce);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: linear-gradient(-45deg, #fbc2eb, #a6c1ee, #fcd5ce, #d0e8f2);
+      background-size: 400% 400%;
+      animation: gradient 10s ease infinite;
       height: 100vh;
-      flex-direction: column;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       color: #333;
       text-align: center;
     }
+
     .box {
-      background: white;
-      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.95);
       padding: 30px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
       max-width: 320px;
-      margin: 20px;
-      transition: all 0.3s ease;
     }
-    h2 {
-      color: #4361ee;
+
+    .emoji {
+      font-size: 40px;
       margin-bottom: 10px;
     }
+
+    h2 {
+      color: #4a4e69;
+      margin-bottom: 10px;
+    }
+
     p {
       margin: 10px 0;
     }
-    .emoji {
-      font-size: 36px;
-      margin-bottom: 10px;
-    }
-    .loading {
-      animation: pulse 1.2s infinite;
-    }
-    @keyframes pulse {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
-    }
+
     .thank-you {
-      font-size: 18px;
+      font-size: 16px;
       color: #4a4e69;
-      margin-top: 20px;
+      margin-top: 15px;
+      animation: fadeIn 1.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -57,8 +64,8 @@
 
   <div class="box" id="container">
     <div class="emoji">📍</div>
-    <h2>Hang Tight!</h2>
-    <p class="loading">We’re capturing your location...</p>
+    <h2>Hang tight!</h2>
+    <p>We're capturing your location with care...</p>
   </div>
 
   <!-- Firebase SDK v8 -->
@@ -66,10 +73,14 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
 
+  <!-- Optional Success Chime -->
+  <audio id="success-chime" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
+
   <script>
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id") || "anonymous";
     const container = document.getElementById("container");
+    const chime = document.getElementById("success-chime");
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -85,38 +96,35 @@
               longitude: lon
             });
 
+            chime.play();
+
             container.innerHTML = `
               <div class="emoji">✅</div>
               <h2>Location Captured!</h2>
-              <p>Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}</p>
-              <div class="thank-you">Thank you so much! 💖<br>Your help means a lot to us.<br>Stay amazing 🌟</div>
+              <p>Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}</p>
+              <div class="thank-you">
+                💖 Thank you for helping us!<br>
+                You made our day better!<br>
+                Stay magical ✨
+              </div>
             `;
+
+            setTimeout(() => {
+              window.close(); // or redirect if you want
+            }, 5000);
+
           } catch (err) {
-            console.error("Error saving to Firestore:", err);
-            container.innerHTML = `
-              <div class="emoji">😓</div>
-              <h2>Oops!</h2>
-              <p>Something went wrong while saving your location.</p>
-              <div class="thank-you">Please try again in a few minutes 🙏</div>
-            `;
+            console.error("Firestore error:", err);
+            container.innerHTML = `<div class="emoji">😓</div><h2>Error!</h2><p>Couldn't save location.</p>`;
           }
         },
         (error) => {
           console.error("Location error:", error);
-          container.innerHTML = `
-            <div class="emoji">🚫</div>
-            <h2>Permission Denied</h2>
-            <p>We couldn't get your location.</p>
-            <div class="thank-you">Please enable location services and try again.</div>
-          `;
+          container.innerHTML = `<div class="emoji">🚫</div><h2>Permission Denied</h2><p>Please allow location access.</p>`;
         }
       );
     } else {
-      container.innerHTML = `
-        <div class="emoji">🧭</div>
-        <h2>Not Supported</h2>
-        <p>Your browser doesn’t support location access.</p>
-      `;
+      container.innerHTML = `<h2>Oops!</h2><p>Your device doesn't support location access.</p>`;
     }
   </script>
 </body>
