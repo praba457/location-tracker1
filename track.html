@@ -1,53 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tracking...</title>
+  <title>Track Location</title>
 </head>
 <body>
-  <h2>Capturing location... hang tight!</h2>
+  <h2>📍 Capturing location... hang tight!</h2>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="firebase-config.js"></script> <!-- Your Firebase config file -->
+  <!-- Firebase SDK v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("id") || "unknown";
+    const id = params.get("id") || "anonymous";
 
     if (navigator.geolocation) {
-      console.log("Geolocation supported. Requesting location...");
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
 
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
+          try {
+            await db.collection("clicks").add({
+              id: id,
+              timestamp: new Date(),
+              latitude: lat,
+              longitude: lon
+            });
 
-        console.log("Location:", latitude, longitude);
-
-        db.collection("clicks").add({
-          id: id,
-          timestamp: new Date(),
-          latitude: latitude,
-          longitude: longitude,
-          city: "Unknown",
-          region: "Unknown",
-          country: "Unknown",
-          ip: "N/A",
-          org: "N/A"
-        }).then(() => {
-          document.body.innerHTML = "<h3>✅ Your location has been recorded. Thank you!</h3>";
-        }).catch((error) => {
-          console.error("Firestore error:", error);
-          document.body.innerHTML = "<p>❌ Failed to save location to the database.</p>";
-        });
-
-      }, function(error) {
-        console.error("Geolocation error:", error);
-        document.body.innerHTML = "<p>❌ Unable to get location. Please allow location access.</p>";
-      });
-
+            document.body.innerHTML = `<h3>✅ Location saved!<br>Lat: ${lat}, Lon: ${lon}</h3>`;
+          } catch (err) {
+            console.error("Firestore error:", err);
+            document.body.innerHTML = `<p>❌ Error saving location. See console.</p>`;
+          }
+        },
+        (error) => {
+          console.error("Geolocation failed:", error);
+          document.body.innerHTML = `
+            <p>❌ Failed to fetch location.</p>
+            <p>${error.message}</p>
+          `;
+        }
+      );
     } else {
-      document.body.innerHTML = "<p>❌ Geolocation is not supported by your browser.</p>";
+      document.body.innerHTML = "<p>❌ Geolocation is not supported in this browser.</p>";
     }
   </script>
 </body>
