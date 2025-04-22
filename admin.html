@@ -1,25 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Panel</title>
+  <meta charset="UTF-8">
+  <title>🌍 Visitor Tracker Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .entry {
-      margin-bottom: 25px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 15px;
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fefefe;
+      margin: 0;
+      padding: 30px;
+      color: #333;
     }
-    iframe {
+    h2 {
+      color: #5e60ce;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .log-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .log-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      padding: 20px;
+      transition: transform 0.2s;
+    }
+    .log-card:hover {
+      transform: scale(1.01);
+    }
+    .log-card h3 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #3c096c;
+    }
+    .log-card iframe {
       width: 100%;
       height: 200px;
-      border: 0;
+      border: none;
+      border-radius: 8px;
       margin-top: 10px;
+    }
+    .share-link {
+      display: inline-block;
+      margin-top: 10px;
+      background: #06d6a0;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .share-link:hover {
+      background: #05c293;
+    }
+    @media screen and (max-width: 600px) {
+      body {
+        padding: 15px;
+      }
     }
   </style>
 </head>
 <body>
-  <h2>📊 Visitor Location Logs</h2>
-  <div id="logs">Loading...</div>
+  <h2>📊 Visitor Tracking Dashboard</h2>
+  <div class="log-container" id="logs">Loading logs...</div>
 
   <!-- Firebase SDK v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -27,48 +74,42 @@
   <script src="firebase-config.js"></script>
 
   <script>
-    function createMapEmbed(lat, lon) {
-      return `
-        <iframe
-          src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"
-          allowfullscreen
-          loading="lazy"
-        ></iframe>
-      `;
+    function createMap(lat, lon) {
+      return `<iframe src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed" loading="lazy"></iframe>`;
     }
 
     function createWhatsAppLink(data) {
-      const msg = `🧭 Visitor Log:
-ID: ${data.id}
-Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
-      return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      const message = `📍 Visitor Log\n\nID: ${data.id}\nLat: ${data.latitude}, Lon: ${data.longitude}\nGoogle Maps: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
+      return `https://wa.me/?text=${encodeURIComponent(message)}`;
     }
 
-    db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
-      const container = document.getElementById("logs");
-      container.innerHTML = "";
+    db.collection("clicks").orderBy("timestamp", "desc").get()
+      .then(snapshot => {
+        const container = document.getElementById("logs");
+        container.innerHTML = "";
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const date = new Date(data.timestamp.toDate()).toLocaleString();
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const date = new Date(data.timestamp.toDate()).toLocaleString();
 
-        const entry = document.createElement("div");
-        entry.classList.add("entry");
-        entry.innerHTML = `
-          <strong>ID:</strong> ${data.id}<br>
-          <strong>Time:</strong> ${date}<br>
-          <strong>Lat:</strong> ${data.latitude}<br>
-          <strong>Lon:</strong> ${data.longitude}<br>
-          ${createMapEmbed(data.latitude, data.longitude)}
-          <br>
-          <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
-        `;
-        container.appendChild(entry);
+          const card = document.createElement("div");
+          card.className = "log-card";
+
+          card.innerHTML = `
+            <h3>🧑‍💻 ID: ${data.id}</h3>
+            <p>⏰ Time: ${date}</p>
+            <p>📍 Location: ${data.latitude}, ${data.longitude}</p>
+            ${createMap(data.latitude, data.longitude)}
+            <a class="share-link" target="_blank" href="${createWhatsAppLink(data)}">📤 Share on WhatsApp</a>
+          `;
+
+          container.appendChild(card);
+        });
+      })
+      .catch(error => {
+        document.getElementById("logs").innerHTML = "❌ Failed to load logs.";
+        console.error("Error fetching data:", error);
       });
-    }).catch(err => {
-      document.getElementById("logs").innerHTML = "❌ Failed to load logs.";
-      console.error(err);
-    });
   </script>
 </body>
 </html>
