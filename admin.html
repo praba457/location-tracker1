@@ -3,15 +3,20 @@
 <head>
   <title>Admin Panel</title>
   <style>
+    body { font-family: Arial; }
     iframe { width: 300px; height: 200px; border: 0; }
-    .row { margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 15px; }
+    .entry {
+      margin-bottom: 30px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 15px;
+    }
   </style>
 </head>
 <body>
   <h2>Visitor Logs with Map</h2>
-  <div id="logs"></div>
+  <div id="logs">Loading...</div>
 
-  <!-- Firebase -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
@@ -27,34 +32,33 @@
     function createShareLink(data) {
       const text = `🧭 Visitor Log:
 ID: ${data.id}
-IP: ${data.ip}
-City: ${data.city}, ${data.region}, ${data.country}
 Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
-      const encoded = encodeURIComponent(text);
-      return `https://wa.me/?text=${encoded}`;
+      return `https://wa.me/?text=${encodeURIComponent(text)}`;
     }
 
     db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
       const container = document.getElementById("logs");
+      container.innerHTML = ""; // Clear "Loading..."
 
       snapshot.forEach(doc => {
         const data = doc.data();
         const time = new Date(data.timestamp.toDate()).toLocaleString();
-        const shareURL = createShareLink(data);
 
-        const row = document.createElement("div");
-        row.classList.add("row");
-        row.innerHTML = `
+        const entry = document.createElement("div");
+        entry.classList.add("entry");
+        entry.innerHTML = `
           <strong>ID:</strong> ${data.id}<br>
-          <strong>IP:</strong> ${data.ip}<br>
-          <strong>Location:</strong> ${data.city}, ${data.region}, ${data.country}<br>
-          <strong>ISP:</strong> ${data.org || "N/A"}<br>
-          <strong>Time:</strong> ${time}<br><br>
+          <strong>Time:</strong> ${time}<br>
+          <strong>Lat:</strong> ${data.latitude}<br>
+          <strong>Lon:</strong> ${data.longitude}<br><br>
           ${createMap(data.latitude, data.longitude)}<br><br>
-          <a href="${shareURL}" target="_blank">📤 Share on WhatsApp</a>
+          <a href="${createShareLink(data)}" target="_blank">📤 Share via WhatsApp</a>
         `;
-        container.appendChild(row);
+        container.appendChild(entry);
       });
+    }).catch(err => {
+      document.getElementById("logs").innerHTML = "❌ Error loading data.";
+      console.error(err);
     });
   </script>
 </body>
