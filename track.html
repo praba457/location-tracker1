@@ -5,13 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Track Location</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
-            color: #333;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
     </style>
 </head>
 <body>
@@ -20,43 +15,76 @@
         <p>Fetching live location...</p>
     </div>
 
-   <script>
-    // Extract phone number and unique ID from URL parameters
-    const params = new URLSearchParams(window.location.search);
-    const phoneNumber = params.get('phone');
-    const uniqueId = params.get('id');
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-database.js"></script>
 
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const { latitude, longitude } = position.coords;
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDY_kmYpJs5EDexvf2nPSWrLaOYoiF8H10",
+  authDomain: "trackablelinks-9b3df.firebaseapp.com",
+  projectId: "trackablelinks-9b3df",
+  storageBucket: "trackablelinks-9b3df.firebasestorage.app",
+  messagingSenderId: "824869195870",
+  appId: "1:824869195870:web:937e99332966ea3a0d64cf"
 
-            // Save the data in localStorage
-            const data = JSON.parse(localStorage.getItem('customerData')) || [];
-            data.push({
-                uniqueId,
-                phoneNumber,
-                latitude,
-                longitude,
-                timestamp: new Date().toLocaleString()
-            });
-            localStorage.setItem('customerData', JSON.stringify(data));
+        };
 
-            // Display the data for the customer
-            const locationInfo = document.getElementById('locationInfo');
-            locationInfo.innerHTML = `
-                <p><strong>Phone Number:</strong> ${phoneNumber}</p>
-                <p><strong>Unique ID:</strong> ${uniqueId}</p>
-                <p><strong>Latitude:</strong> ${latitude}</p>
-                <p><strong>Longitude:</strong> ${longitude}</p>
-            `;
-        },
-        (error) => {
-            document.getElementById('locationInfo').innerHTML = `
-                <p>Error: Unable to fetch location. Please enable location permissions.</p>
-            `;
-        }
-    );
-</script>
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
+        // Extract parameters from URL
+        const params = new URLSearchParams(window.location.search);
+        const phoneNumber = params.get('phone');
+        const uniqueId = params.get('id');
+
+        // Request location permission and fetch coordinates
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+
+                // Log for debugging
+                console.log("Location fetched successfully!");
+                console.log("Latitude:", latitude, "Longitude:", longitude);
+
+                // Save location details to Firebase
+                db.ref('customers/' + uniqueId).set({
+                    phoneNumber,
+                    latitude,
+                    longitude,
+                    timestamp: new Date().toLocaleString()
+                });
+
+                // Display location details
+                const locationInfo = document.getElementById('locationInfo');
+                locationInfo.innerHTML = `
+                    <p><strong>Phone Number:</strong> ${phoneNumber}</p>
+                    <p><strong>Unique ID:</strong> ${uniqueId}</p>
+                    <p><strong>Latitude:</strong> ${latitude}</p>
+                    <p><strong>Longitude:</strong> ${longitude}</p>
+                `;
+            },
+            (error) => {
+                let errorMessage = '';
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = 'Location permission denied by the user.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = 'The request to fetch location timed out.';
+                        break;
+                    default:
+                        errorMessage = 'An unknown error occurred while fetching location.';
+                }
+                const locationInfo = document.getElementById('locationInfo');
+                locationInfo.innerHTML = `<p>Error: ${errorMessage}</p>`;
+            }
+        );
+    </script>
 </body>
 </html>
