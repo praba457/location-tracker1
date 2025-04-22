@@ -2,7 +2,7 @@
 <html>
 <head><title>Tracking...</title></head>
 <body>
-  <h2>Capturing location...</h2>
+  <h2>Capturing location... hang tight!</h2>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
@@ -13,24 +13,28 @@
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id") || "unknown";
 
-    fetch('https://ipapi.co/json/')
+    fetch("https://ipinfo.io/json?token=75c2b45984361a")  // replace with your token
       .then(res => res.json())
       .then(data => {
+        const [latitude, longitude] = data.loc.split(",");
+
         db.collection("clicks").add({
           id: id,
           timestamp: new Date(),
           ip: data.ip,
           city: data.city,
           region: data.region,
-          country: data.country_name,
-          org: data.org
+          country: data.country,
+          org: data.org || "N/A",
+          latitude,
+          longitude
         }).then(() => {
-          document.body.innerHTML = "<h3>Thank you! Your location has been logged.</h3>";
+          document.body.innerHTML = "<h3>Thank you! Your location has been recorded.</h3>";
         });
       })
       .catch(err => {
-        document.body.innerHTML = "<p>Unable to get location at the moment.</p>";
-        console.error("Geolocation error:", err);
+        document.body.innerHTML = "<p>Unable to get location. Please try again later.</p>";
+        console.error("Geo error:", err);
       });
   </script>
 </body>
