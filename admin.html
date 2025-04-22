@@ -3,27 +3,11 @@
 <head>
   <title>Admin Panel</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-    h2 { margin-bottom: 10px; }
-    .controls {
-      margin-bottom: 20px;
-    }
-    .clear-btn {
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-      border-radius: 5px;
-      font-size: 14px;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; }
     .entry {
       margin-bottom: 25px;
       border-bottom: 1px solid #ccc;
       padding-bottom: 15px;
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
     }
     iframe {
       width: 100%;
@@ -31,20 +15,10 @@
       border: 0;
       margin-top: 10px;
     }
-    a {
-      text-decoration: none;
-      color: #3498db;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
   </style>
 </head>
 <body>
   <h2>📊 Visitor Location Logs</h2>
-  <div class="controls">
-    <button class="clear-btn" onclick="clearLogs()">🗑️ Clear All Logs</button>
-  </div>
   <div id="logs">Loading...</div>
 
   <!-- Firebase SDK v8 -->
@@ -53,8 +27,6 @@
   <script src="firebase-config.js"></script>
 
   <script>
-    const logsContainer = document.getElementById("logs");
-
     function createMapEmbed(lat, lon) {
       return `
         <iframe
@@ -72,56 +44,31 @@ Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
       return `https://wa.me/?text=${encodeURIComponent(msg)}`;
     }
 
-    function loadLogs() {
-      db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
-        logsContainer.innerHTML = "";
+    db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
+      const container = document.getElementById("logs");
+      container.innerHTML = "";
 
-        if (snapshot.empty) {
-          logsContainer.innerHTML = "<p>No logs found.</p>";
-          return;
-        }
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const date = new Date(data.timestamp.toDate()).toLocaleString();
 
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const date = new Date(data.timestamp.toDate()).toLocaleString();
-
-          const entry = document.createElement("div");
-          entry.classList.add("entry");
-          entry.innerHTML = `
-            <strong>ID:</strong> ${data.id}<br>
-            <strong>Time:</strong> ${date}<br>
-            <strong>Lat:</strong> ${data.latitude}<br>
-            <strong>Lon:</strong> ${data.longitude}<br>
-            ${createMapEmbed(data.latitude, data.longitude)}
-            <br>
-            <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
-          `;
-          logsContainer.appendChild(entry);
-        });
-      }).catch(err => {
-        logsContainer.innerHTML = "❌ Failed to load logs.";
-        console.error(err);
+        const entry = document.createElement("div");
+        entry.classList.add("entry");
+        entry.innerHTML = `
+          <strong>ID:</strong> ${data.id}<br>
+          <strong>Time:</strong> ${date}<br>
+          <strong>Lat:</strong> ${data.latitude}<br>
+          <strong>Lon:</strong> ${data.longitude}<br>
+          ${createMapEmbed(data.latitude, data.longitude)}
+          <br>
+          <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
+        `;
+        container.appendChild(entry);
       });
-    }
-
-    function clearLogs() {
-      if (!confirm("Are you sure you want to delete all visitor logs? This cannot be undone.")) return;
-
-      db.collection("clicks").get().then(snapshot => {
-        const batch = db.batch();
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        return batch.commit();
-      }).then(() => {
-        alert("✅ All logs have been cleared.");
-        logsContainer.innerHTML = "<p>No logs found.</p>";
-      }).catch(error => {
-        console.error("Error clearing logs:", error);
-        alert("❌ Failed to clear logs.");
-      });
-    }
-
-    // Load logs on page load
-    loadLogs();
+    }).catch(err => {
+      document.getElementById("logs").innerHTML = "❌ Failed to load logs.";
+      console.error(err);
+    });
   </script>
 </body>
 </html>
