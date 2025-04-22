@@ -1,73 +1,248 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Panel</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Super Admin Panel</title>
+
+  <!-- Styles and Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .entry {
-      margin-bottom: 25px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 15px;
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
     }
+    header {
+      background: #4a90e2;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 22px;
+      margin: 0;
+    }
+    .top-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .export-btn { background: #2ecc71; color: white; }
+    .clear-btn { background: #e74c3c; color: white; }
+    .map-btn { background: #f39c12; color: white; }
+    .dark-toggle { background: #333; color: #fff; }
+
+    .dashboard {
+      padding: 20px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      flex: 1;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    .entry {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
     iframe {
       width: 100%;
       height: 200px;
-      border: 0;
+      border: none;
       margin-top: 10px;
+    }
+
+    a {
+      text-decoration: none;
+      color: #2980b9;
+    }
+
+    .dark-mode {
+      background-color: #1e1e2f;
+      color: #eee;
+    }
+
+    .dark-mode .entry,
+    .dark-mode .stat-box {
+      background-color: #2c2c3e;
+      color: #eee;
+    }
+
+    .dark-mode header {
+      background-color: #111;
     }
   </style>
 </head>
 <body>
-  <h2>📊 Visitor Location Logs</h2>
-  <div id="logs">Loading...</div>
 
-  <!-- Firebase SDK v8 -->
+  <header>
+    <h1>📊 Super Admin Dashboard</h1>
+    <div class="top-buttons">
+      <button class="map-btn" onclick="openLiveMap()">🌍 Show All on Map</button>
+      <button class="export-btn" onclick="exportToCSV()">📁 Export CSV</button>
+      <button class="clear-btn" onclick="clearLogs()">🗑️ Clear All</button>
+      <button class="dark-toggle" onclick="toggleDark()">🌙 Dark Mode</button>
+    </div>
+  </header>
+
+  <div class="dashboard">
+    <div class="stats">
+      <div class="stat-box">
+        <div id="totalClicks">0</div>
+        <small>Total Clicks</small>
+      </div>
+      <div class="stat-box">
+        <div id="lastClick">--</div>
+        <small>Last Activity</small>
+      </div>
+      <div class="stat-box">
+        <div id="uniqueUsers">0</div>
+        <small>Unique IDs</small>
+      </div>
+    </div>
+
+    <div id="logs">Loading logs...</div>
+  </div>
+
+  <!-- Firebase + Leaflet -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="firebase-config.js"></script>
 
   <script>
+    const dbRef = db.collection("clicks");
+    const logsContainer = document.getElementById("logs");
+
+    let allData = [];
+
     function createMapEmbed(lat, lon) {
-      return `
-        <iframe
-          src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"
-          allowfullscreen
-          loading="lazy"
-        ></iframe>
-      `;
+      return `<iframe src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
     }
 
     function createWhatsAppLink(data) {
-      const msg = `🧭 Visitor Log:
-ID: ${data.id}
-Map: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
+      const msg = `🧭 Visitor Log:\nID: ${data.id}\nMap: https://maps.google.com/maps?q=${data.latitude},${data.longitude}`;
       return `https://wa.me/?text=${encodeURIComponent(msg)}`;
     }
 
-    db.collection("clicks").orderBy("timestamp", "desc").get().then(snapshot => {
-      const container = document.getElementById("logs");
-      container.innerHTML = "";
+    function exportToCSV() {
+      if (allData.length === 0) return alert("No data to export.");
+      const csv = ["ID,Latitude,Longitude,Timestamp"];
+      allData.forEach(d => {
+        csv.push(`${d.id},${d.latitude},${d.longitude},${d.timestamp.toDate()}`);
+      });
+      const blob = new Blob([csv.join("\n")], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "visitor_logs.csv";
+      a.click();
+    }
+
+    function openLiveMap() {
+      const mapWin = window.open("", "_blank", "width=800,height=600");
+      mapWin.document.write(`
+        <html>
+        <head>
+          <title>All Visitor Map</title>
+          <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+          <style>
+            #map { height: 100vh; width: 100vw; }
+          </style>
+        </head>
+        <body>
+          <div id="map"></div>
+          <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+          <script>
+            const map = L.map('map').setView([20, 0], 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: 'Map data © OpenStreetMap contributors'
+            }).addTo(map);
+            const data = ${JSON.stringify(allData)};
+            data.forEach(user => {
+              const marker = L.marker([user.latitude, user.longitude]).addTo(map);
+              marker.bindPopup("ID: " + user.id);
+            });
+          </script>
+        </body>
+        </html>
+      `);
+    }
+
+    function clearLogs() {
+      if (!confirm("Are you sure you want to delete all logs?")) return;
+      dbRef.get().then(snapshot => {
+        const batch = db.batch();
+        snapshot.forEach(doc => batch.delete(doc.ref));
+        return batch.commit();
+      }).then(() => {
+        alert("✅ All logs deleted.");
+        location.reload();
+      });
+    }
+
+    function toggleDark() {
+      document.body.classList.toggle("dark-mode");
+    }
+
+    // Load Logs
+    dbRef.orderBy("timestamp", "desc").get().then(snapshot => {
+      logsContainer.innerHTML = "";
+      const ids = new Set();
 
       snapshot.forEach(doc => {
         const data = doc.data();
-        const date = new Date(data.timestamp.toDate()).toLocaleString();
+        allData.push(data);
+        ids.add(data.id);
+
+        const time = new Date(data.timestamp.toDate()).toLocaleString();
 
         const entry = document.createElement("div");
         entry.classList.add("entry");
         entry.innerHTML = `
           <strong>ID:</strong> ${data.id}<br>
-          <strong>Time:</strong> ${date}<br>
-          <strong>Lat:</strong> ${data.latitude}<br>
-          <strong>Lon:</strong> ${data.longitude}<br>
+          <strong>Time:</strong> ${time}<br>
+          <strong>Latitude:</strong> ${data.latitude}<br>
+          <strong>Longitude:</strong> ${data.longitude}<br>
           ${createMapEmbed(data.latitude, data.longitude)}
-          <br>
+          <br><br>
           <a href="${createWhatsAppLink(data)}" target="_blank">📤 Share on WhatsApp</a>
         `;
-        container.appendChild(entry);
+        logsContainer.appendChild(entry);
       });
-    }).catch(err => {
-      document.getElementById("logs").innerHTML = "❌ Failed to load logs.";
-      console.error(err);
+
+      // Update stats
+      document.getElementById("totalClicks").innerText = snapshot.size;
+      document.getElementById("uniqueUsers").innerText = ids.size;
+      if (allData.length) {
+        document.getElementById("lastClick").innerText =
+          new Date(allData[0].timestamp.toDate()).toLocaleString();
+      }
     });
   </script>
 </body>
